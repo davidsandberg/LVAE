@@ -63,7 +63,8 @@ class LVAE(object):
                 z = self.ls.sampler(self.d_mus[l], tf.exp(self.d_logsigmas[l]))
 
                 """ prior of z_L is set as standard Gaussian, N(0,I). """
-                self.p_mus[l], self.p_logsigmas[l] = tf.zeros((mu.get_shape())), tf.zeros((logsigma.get_shape()))
+                #self.p_mus[l], self.p_logsigmas[l] = tf.zeros((mu.get_shape())), tf.zeros((logsigma.get_shape()))
+                self.p_mus[l], self.p_logsigmas[l] = tf.zeros_like(mu), tf.zeros_like(logsigma)
 
             else:
                 """ prior is developed from z of the above layer """
@@ -94,7 +95,7 @@ class LVAE(object):
         logit = self.encoder(x)
         x_reconst = self.decoder()
 
-        with tf.variable_scope(tf.get_variable_scope(), reuse=True):
+        with tf.compat.v1.variable_scope(tf.compat.v1.get_variable_scope(), reuse=True):
             logit_l = self.encoder(x_l, is_train=True, do_update_bn=False)  # for pyx and vat loss computation
 
         """ Classification Loss """
@@ -123,7 +124,7 @@ class LVAE(object):
         self.o_train = o
 
         """ set optimizer """
-        optimizer = tf.train.AdamOptimizer(learning_rate=self.lr, beta1=0.5)
+        optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.lr, beta1=0.5)
         #self.op = optimizer.minimize(loss)
         grads = optimizer.compute_gradients(loss)
         for i,(g,v) in enumerate(grads):

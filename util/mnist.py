@@ -41,7 +41,7 @@ tf.app.flags.DEFINE_integer('validation_size', 5000,
 tf.app.flags.DEFINE_integer('n_labeled', 100, "The number of labeled examples")
 tf.app.flags.DEFINE_integer('dataset_seed', 1, "dataset seed")
 
-DATA_DIR = '/Users/homerunrun/python/data/MNIST'
+DATA_DIR = '/home/david/PycharmProjects/LVAE2/data'
 VALIDATION_SIZE = 5000
 
 N_LABELED = 100
@@ -54,10 +54,10 @@ N_EXAMPLES_TRAIN = 55000
 N_EXAMPLES_TEST = 10000
 
 TFRECORDS_TRAIN              = "train.tfrecords"
-TFRECORDS_TRAIN_LABELED      = "train_labeled.tfrecords"
+TFRECORDS_TRAIN_LABELED      = "train_tfrecords"
 TFRECORDS_TEST               = "test.tfrecords"
 TFRECORDS_VALIDATION         = "validation.tfrecords"
-TFRECORDS_VALIDATION_LABELED = "validation_labeled.tfrecords"
+TFRECORDS_VALIDATION_LABELED = "validation.tfrecords"
 
 def prepare_dataset(is_process_only_labeled_data=True):
     # Get the data as 1D if reshape=False, otherwise as 3D.

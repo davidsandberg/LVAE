@@ -21,24 +21,24 @@ class Layers(object):
         else:
             W_initializer = tf.constant_initializer(W_init)
 
-        return tf.get_variable(W_name, W_shape, initializer=W_initializer)
+        return tf.compat.v1.get_variable(W_name, W_shape, initializer=W_initializer)
 
     def Wb( self, W_shape, b_shape, W_name='W', b_name='b', W_init=None, b_init=0.1):
 
         W = self.W(W_shape, W_name=W_name, W_init=None)
-        b = tf.get_variable(b_name, b_shape, initializer=tf.constant_initializer(b_init))
+        b = tf.compat.v1.get_variable(b_name, b_shape, initializer=tf.constant_initializer(b_init))
 
         def _summaries(var):
             """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
             with tf.name_scope('summaries'):
                 mean = tf.reduce_mean(var)
-                tf.summary.scalar('mean', mean)
+                tf.compat.v1.summary.scalar('mean', mean)
                 with tf.name_scope('stddev'):
                     stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-                tf.summary.scalar('stddev', stddev)
-                tf.summary.scalar('max', tf.reduce_max(var))
-                tf.summary.scalar('min', tf.reduce_min(var))
-                tf.summary.histogram('histogram', var)
+                tf.compat.v1.summary.scalar('stddev', stddev)
+                tf.compat.v1.summary.scalar('max', tf.reduce_max(var))
+                tf.compat.v1.summary.scalar('min', tf.reduce_min(var))
+                tf.compat.v1.summary.histogram('histogram', var)
         _summaries(W)
         _summaries(b)
 
@@ -53,9 +53,10 @@ class Layers(object):
             pass
         elif len(x.get_shape()) == 4: # cnn as NHWC
             #x = tf.reshape(x, [tf.shape(x)[0], -1]) # flatten
-            x = tf.reshape(x, [x.get_shape().as_list()[0], -1]) # flatten
+            #dsg x = tf.reshape(x, [x.get_shape().as_list()[0], -1]) # flatten
+            x = tf.contrib.layers.flatten(x)
             #x = tf.reshape(x, [tf.cast(x.get_shape()[0], tf.int32), -1]) # flatten
-        with tf.variable_scope(scope,reuse=self.do_share): W, b = self.Wb([x.get_shape()[1], output_dim], [output_dim])
+        with tf.compat.v1.variable_scope(scope,reuse=self.do_share): W, b = self.Wb([x.get_shape()[1], output_dim], [output_dim])
         #with tf.variable_scope(scope,reuse=self.do_share): W, b = self.Wb([x.get_shape()[1], output_dim], [output_dim])
         o = tf.matmul(x, W) + b 
         return o if activation is None else activation(o)
@@ -105,7 +106,7 @@ class Layers(object):
     """      Rparameterization Tricks       """
     ###########################################
     def epsilon( self, _shape, _stddev=1.):
-        return tf.truncated_normal(_shape, mean=0, stddev=_stddev)
+        return tf.random.truncated_normal(_shape, mean=0, stddev=_stddev)
 
     def sampler( self, mu, sigma):
         """
@@ -116,7 +117,7 @@ class Layers(object):
         
     def vae_sampler( self, scope, x, size, activation=tf.nn.elu):
         # for LVAE
-        with tf.variable_scope(scope,reuse=self.do_share): 
+        with tf.compat.v1.variable_scope(scope,reuse=self.do_share): 
             mu       = self.dense(scope+'_vae_mu', x, size)
             logsigma = self.dense(scope+'_vae_logsigma', x, size, activation)
             logsigma = tf.clip_by_value(logsigma, eps, 50)
@@ -136,7 +137,7 @@ class Layers(object):
         sigma2__2 = 1 / tf.square(sigma2)
         mu = ( mu1*sigma1__2 + mu2*sigma2__2 )/(sigma1__2 + sigma2__2)
         sigma = 1 / (sigma1__2 + sigma2__2)
-        logsigma = tf.log(sigma + eps)
+        logsigma = tf.math.log(sigma + eps)
         return (mu, logsigma, sigma)
     
     def precision_weighted_sampler( self, scope, musigma1, musigma2):
@@ -170,11 +171,11 @@ class Layers(object):
             size = x.get_shape().as_list()[3]
             axes = [0,1,2]
         #params_shape = (dim,)
-        n = tf.to_float(tf.reduce_prod(tf.shape(x)[:-1]))
+        n = tf.cast(tf.reduce_prod(tf.shape(x)[:-1]), tf.float32)
         axis = list(range(int(tf.shape(x).get_shape().as_list()[0]) - 1))
         mean = tf.reduce_mean(x, axis)
         var = tf.reduce_mean(tf.pow(x - mean, 2.0), axis)
-        avg_mean = tf.get_variable(
+        avg_mean = tf.compat.v1.get_variable(
             name=name + "_mean",
             #shape=params_shape,
             shape=(size),
@@ -183,7 +184,7 @@ class Layers(object):
             trainable=False
         )
 
-        avg_var = tf.get_variable(
+        avg_var = tf.compat.v1.get_variable(
             name=name + "_var",
             #shape=params_shape,
             shape=(size),
@@ -192,7 +193,7 @@ class Layers(object):
             trainable=False
         )
 
-        gamma = tf.get_variable(
+        gamma = tf.compat.v1.get_variable(
             name=name + "_gamma",
             #shape=params_shape,
             shape=(size),
@@ -200,7 +201,7 @@ class Layers(object):
             collections=collections
         )
 
-        beta = tf.get_variable(
+        beta = tf.compat.v1.get_variable(
             name=name + "_beta",
             #shape=params_shape,
             shape=(size),
@@ -212,10 +213,10 @@ class Layers(object):
             avg_mean_assign_op = tf.no_op()
             avg_var_assign_op = tf.no_op()
             if do_update_bn:
-                avg_mean_assign_op = tf.assign(
+                avg_mean_assign_op = tf.compat.v1.assign(
                     avg_mean,
                     decay * avg_mean + (1 - decay) * mean)
-                avg_var_assign_op = tf.assign(
+                avg_var_assign_op = tf.compat.v1.assign(
                     avg_var,
                     decay * avg_var + (n / (n - 1)) * (1 - decay) * var)
 

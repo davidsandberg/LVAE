@@ -11,7 +11,7 @@ class LossFunctions(object):
         self.ls = layers
         self.d  = dataset
         self.encoder = encoder
-        self.reconst_pixel_log_stdv = tf.get_variable("reconst_pixel_log_stdv", initializer=tf.constant(0.0))
+        self.reconst_pixel_log_stdv = tf.compat.v1.get_variable("reconst_pixel_log_stdv", initializer=tf.constant(0.0))
 
     def get_loss_pyx(self, logit, y):
 
@@ -39,14 +39,14 @@ class LossFunctions(object):
     def _binary_crossentropy(self, t,o):
         t = tf.reshape( t, (-1, self.d.img_size))
         o = tf.reshape( o, (-1, self.d.img_size))
-        return -(t*tf.log(o+eps) + (1.0-t)*tf.log(1.0-o+eps))
+        return -(t*tf.math.log(o+eps) + (1.0-t)*tf.math.log(1.0-o+eps))
 
     def _discretized_logistic(self, x_reconst, x_original, binsize=1/256.0):
         # https://github.com/openai/iaf/blob/master/tf_utils/
         scale = tf.exp(self.reconst_pixel_log_stdv)
         x_original = (tf.floor(x_original / binsize) * binsize - x_reconst) / scale
 
-        logp = tf.log(tf.sigmoid(x_original + binsize / scale) - tf.sigmoid(x_original) + eps)
+        logp = tf.math.log(tf.sigmoid(x_original + binsize / scale) - tf.sigmoid(x_original) + eps)
 
         shape = x_reconst.get_shape().as_list()
         if len(shape) == 2:   # 1d
@@ -79,7 +79,7 @@ class LossFunctions(object):
             d_sigma2, p_sigma2 = tf.square(d_sigma), tf.square(p_sigma)
        
             kl1 = 0.5*tf.reduce_sum( (tf.square(d_mu) + d_sigma2) - 2*d_logsigma, 1) - Z_SIZES[l]*.5
-            kl2 = 0.5*tf.reduce_sum( (tf.square(d_mu - p_mu) + d_sigma2)/p_sigma2 - 2*tf.log((d_sigma/p_sigma) + eps), 1) - Z_SIZES[l]*.5
+            kl2 = 0.5*tf.reduce_sum( (tf.square(d_mu - p_mu) + d_sigma2)/p_sigma2 - 2*tf.math.log((d_sigma/p_sigma) + eps), 1) - Z_SIZES[l]*.5
     
             Lzs1[l] = tf.reduce_mean( tf.maximum(_lambda, kl1 ))
             Lzs2[l] = tf.reduce_mean( kl2 )

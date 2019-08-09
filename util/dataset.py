@@ -35,9 +35,12 @@ class Dataset(object):
 
         # xtrain: all records
         # *_l   : partial records
-        from mnist import inputs
-        xtrain,_           = inputs(self.batch_size, 'train')
-        xtrain_l, ytrain_l = inputs(self.batch_size, 'train_labeled')
-        xtest , ytest      = inputs(self.batch_size, 'test')
+#        from mnist import inputs
+#        xtrain,_           = inputs(self.batch_size, 'train')
+#        xtrain_l, ytrain_l = inputs(self.batch_size, 'train_labeled')
+#        xtest , ytest      = inputs(self.batch_size, 'test')
 
-        return (xtrain_l, ytrain_l), xtrain, (xtest , ytest)
+#        return (xtrain_l, ytrain_l), xtrain, (xtest , ytest)
+
+        (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+        return (x_train, y_train), x_train, (x_test, y_test)

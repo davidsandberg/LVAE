@@ -102,6 +102,26 @@ def test_draw():
         f.write(sess.run(tf.image.encode_png(o)))
     sess.close()
 
+def create_dataset(x, y, batch_size):
+    # Create a dataset tensor from the images and the labels
+    xn = (x.astype(np.float32)-128.0) / 128.0
+    xn = np.expand_dims(xn,3)
+    dataset = tf.data.Dataset.from_tensor_slices((xn, y))
+    # Automatically refill the data queue when empty
+    dataset = dataset.repeat()
+    # Create batches of data
+    dataset = dataset.batch(batch_size)
+    # Prefetch data for faster consumption
+    dataset = dataset.prefetch(batch_size)
+
+    # Create an iterator over the dataset
+    iterator = tf.compat.v1.data.make_initializable_iterator(dataset)
+    # Initialize the iterator
+
+    # Neural Net Input (images, labels)
+
+    return iterator
+
 
 with tf.Graph().as_default() as g:
 
@@ -109,14 +129,18 @@ with tf.Graph().as_default() as g:
     """             Load Data               """
     ###########################################
     (xtrain_l, ytrain_l), xtrain, (xtest , ytest) = d.get_tfrecords()
+    iterator = create_dataset(xtrain_l, ytrain_l, BATCH_SIZE)
+    xtrain_l, ytrain_l = iterator.get_next()
+    xtrain = xtrain_l
+    #xtrain.set_shape([128, 28,28,1])
 
     ###########################################
     """        Build Model Graphs           """
     ###########################################
-    with tf.variable_scope("watashinomodel") as scope:
+    with tf.compat.v1.variable_scope("watashinomodel") as scope:
 
-        lr          = tf.placeholder(tf.float32, shape=[], name="learning_rate")
-        lambda_z_wu = tf.placeholder(tf.float32, shape=(), name="lambda_z_wu")
+        lr          = tf.compat.v1.placeholder(tf.float32, shape=[], name="learning_rate")
+        lambda_z_wu = tf.compat.v1.placeholder(tf.float32, shape=(), name="lambda_z_wu")
 
         m = LVAE(d, lr, lambda_z_wu, DO_CLASSIFY)
 
@@ -131,11 +155,12 @@ with tf.Graph().as_default() as g:
     ###########################################
     """              Init                   """
     ###########################################
-    init_op = tf.global_variables_initializer()
+    init_op = tf.compat.v1.global_variables_initializer()
     #for v in tf.all_variables(): print("%s : %s" % (v.name,v.get_shape()))
 
-    sess  = tf.InteractiveSession()
+    sess  = tf.compat.v1.InteractiveSession()
     sess.run(init_op)
+    sess.run(iterator.initializer)
     saver = tf.train.Saver()
     _lr, ratio = STARTER_LEARNING_RATE, 1.0
 
@@ -146,7 +171,7 @@ with tf.Graph().as_default() as g:
     """         Training Loop               """
     ###########################################
     print('... start training')
-    tf.train.start_queue_runners(sess=sess)
+    #tf.train.start_queue_runners(sess=sess)
     for epoch in range(1, N_EPOCHS+1):
 
         # set coefficient of warm-up
